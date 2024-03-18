@@ -11,8 +11,8 @@ const getProblems = (): Promise<ListResponse> => {
         })
 }
 
-const getProblem = (id: string): Promise<BaseResponse> => {
-    return axiosClient.get('/api/problems/' + id)
+const getProblem = (slug: string): Promise<BaseResponse> => {
+    return axiosClient.get('/api/problems/slug/' + slug)
         .then(res => {
             return res.data
         })

@@ -10,14 +10,14 @@ import Timer from "../Timer/Timer";
 import { useRouter } from "next/router";
 import { problems } from "@/utils/problems";
 import { Problem } from "@/utils/types/problem";
-import useLocalStorage from "@/hooks/useLocalStorage";
+import useUserProfile from "@/hooks/useUserProfile";
 
 type TopbarProps = {
 	problemPage?: boolean;
 };
 
 const Topbar: React.FC<TopbarProps> = ({ problemPage }) => {
-	const [user] = useLocalStorage("user", "");
+	const user = useUserProfile();
 	const setAuthModalState = useSetRecoilState(authModalState);
 	const router = useRouter();
 
