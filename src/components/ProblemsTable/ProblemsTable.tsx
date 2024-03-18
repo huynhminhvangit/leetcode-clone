@@ -4,10 +4,10 @@ import { BsCheckCircle } from "react-icons/bs";
 import { AiFillYoutube } from "react-icons/ai";
 import { IoClose } from "react-icons/io5";
 import YouTube from "react-youtube";
-import { collection, doc, getDoc, getDocs, orderBy, query } from "firebase/firestore";
-import { auth, firestore } from "@/firebase/firebase";
 import { DBProblem } from "@/utils/types/problem";
-import { useAuthState } from "react-firebase-hooks/auth";
+import { problemApi } from "@/services/problem-api";
+import useLocalStorage from "@/hooks/useLocalStorage";
+import { authApi } from "@/services";
 
 type ProblemsTableProps = {
 	setLoadingProblems: React.Dispatch<React.SetStateAction<boolean>>;
@@ -42,12 +42,12 @@ const ProblemsTable: React.FC<ProblemsTableProps> = ({ setLoadingProblems }) => 
 						problem.difficulty === "Easy"
 							? "text-dark-green-s"
 							: problem.difficulty === "Medium"
-							? "text-dark-yellow"
-							: "text-dark-pink";
+								? "text-dark-yellow"
+								: "text-dark-pink";
 					return (
-						<tr className={`${idx % 2 == 1 ? "bg-dark-layer-1" : ""}`} key={problem.id}>
+						<tr className={`${idx % 2 == 1 ? "bg-dark-layer-1" : ""}`} key={problem.slug}>
 							<th className='px-2 py-4 font-medium whitespace-nowrap text-dark-green-s'>
-								{solvedProblems.includes(problem.id) && <BsCheckCircle fontSize={"18"} width='18' />}
+								{solvedProblems.includes(problem.slug) && <BsCheckCircle fontSize={"18"} width='18' />}
 							</th>
 							<td className='px-6 py-4'>
 								{problem.link ? (
@@ -61,7 +61,7 @@ const ProblemsTable: React.FC<ProblemsTableProps> = ({ setLoadingProblems }) => 
 								) : (
 									<Link
 										className='hover:text-blue-600 cursor-pointer'
-										href={`/problems/${problem.id}`}
+										href={`/problems/${problem.slug}`}
 									>
 										{problem.title}
 									</Link>
@@ -122,12 +122,13 @@ function useGetProblems(setLoadingProblems: React.Dispatch<React.SetStateAction<
 		const getProblems = async () => {
 			// fetching data logic
 			setLoadingProblems(true);
-			const q = query(collection(firestore, "problems"), orderBy("order", "asc"));
-			const querySnapshot = await getDocs(q);
+			const { data } = await problemApi.getProblems();
 			const tmp: DBProblem[] = [];
-			querySnapshot.forEach((doc) => {
-				tmp.push({ id: doc.id, ...doc.data() } as DBProblem);
-			});
+			if (data) {
+				data.forEach((doc: any) => {
+					tmp.push({ id: doc._id, ...doc } as DBProblem);
+				});
+			}
 			setProblems(tmp);
 			setLoadingProblems(false);
 		};
@@ -139,15 +140,12 @@ function useGetProblems(setLoadingProblems: React.Dispatch<React.SetStateAction<
 
 function useGetSolvedProblems() {
 	const [solvedProblems, setSolvedProblems] = useState<string[]>([]);
-	const [user] = useAuthState(auth);
+	const [user] = useLocalStorage("user", "");
 
 	useEffect(() => {
 		const getSolvedProblems = async () => {
-			const userRef = doc(firestore, "users", user!.uid);
-			const userDoc = await getDoc(userRef);
-
-			if (userDoc.exists()) {
-				setSolvedProblems(userDoc.data().solvedProblems);
+			if (!user) {
+				setSolvedProblems(user.solvedProblems);
 			}
 		};
 

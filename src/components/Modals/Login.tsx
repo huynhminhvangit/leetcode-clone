@@ -1,10 +1,10 @@
 import { authModalState } from "@/atoms/authModalAtom";
-import { auth } from "@/firebase/firebase";
 import { useRouter } from "next/router";
 import React, { useEffect, useState } from "react";
-import { useSignInWithEmailAndPassword } from "react-firebase-hooks/auth";
 import { useSetRecoilState } from "recoil";
 import { toast } from "react-toastify";
+import { authApi } from "@/services";
+import useLocalStorage from "@/hooks/useLocalStorage";
 type LoginProps = {};
 
 const Login: React.FC<LoginProps> = () => {
@@ -13,26 +13,38 @@ const Login: React.FC<LoginProps> = () => {
 		setAuthModalState((prev) => ({ ...prev, type }));
 	};
 	const [inputs, setInputs] = useState({ email: "", password: "" });
-	const [signInWithEmailAndPassword, user, loading, error] = useSignInWithEmailAndPassword(auth);
+	const [error, setError] = useState({ message: null });
+	const [loading, setLoading] = useState(false);
 	const router = useRouter();
+	const [accessToken, setAccessToken] = useLocalStorage("access-token", "");
+	const [user, setUser] = useLocalStorage("user", "");
+
 	const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		setInputs((prev) => ({ ...prev, [e.target.name]: e.target.value }));
 	};
 
 	const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
+		setLoading(true);
 		e.preventDefault();
 		if (!inputs.email || !inputs.password) return alert("Please fill all fields");
 		try {
-			const newUser = await signInWithEmailAndPassword(inputs.email, inputs.password);
-			if (!newUser) return;
+			const response = await authApi.login({ email: inputs.email, password: inputs.password });
+
+			if (!response.success) {
+				setLoading(false);
+				toast.error(response.message, { position: "top-center", autoClose: 3000, theme: "dark" });
+				return;
+			}
+			setAccessToken(response.tokenType + " " + response.token);
 			router.push("/");
-		} catch (error: any) {
-			toast.error(error.message, { position: "top-center", autoClose: 3000, theme: "dark" });
+		} catch (err: any) {
+			setLoading(false);
+			toast.error(err.message, { position: "top-center", autoClose: 3000, theme: "dark" });
 		}
 	};
 
 	useEffect(() => {
-		if (error) toast.error(error.message, { position: "top-center", autoClose: 3000, theme: "dark" });
+		if (error.message) toast.error(error.message, { position: "top-center", autoClose: 3000, theme: "dark" });
 	}, [error]);
 	return (
 		<form className='space-y-6 px-6 pb-4' onSubmit={handleLogin}>

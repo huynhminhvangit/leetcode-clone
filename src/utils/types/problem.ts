@@ -21,6 +21,7 @@ export type Problem = {
 
 export type DBProblem = {
 	id: string;
+	slug: string;
 	title: string;
 	category: string;
 	difficulty: string;

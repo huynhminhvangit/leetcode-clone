@@ -1,11 +1,11 @@
 import { authModalState } from "@/atoms/authModalAtom";
-import { auth, firestore } from "@/firebase/firebase";
 import { useEffect, useState } from "react";
 import { useSetRecoilState } from "recoil";
-import { useCreateUserWithEmailAndPassword } from "react-firebase-hooks/auth";
 import { useRouter } from "next/router";
 import { doc, setDoc } from "firebase/firestore";
 import { toast } from "react-toastify";
+import { authApi } from "@/services";
+import useLocalStorage from "@/hooks/useLocalStorage";
 
 type SignupProps = {};
 
@@ -16,40 +16,40 @@ const Signup: React.FC<SignupProps> = () => {
 	};
 	const [inputs, setInputs] = useState({ email: "", displayName: "", password: "" });
 	const router = useRouter();
-	const [createUserWithEmailAndPassword, user, loading, error] = useCreateUserWithEmailAndPassword(auth);
+	const [error, setError] = useState({ message: null});
+	const [loading, setLoading] = useState(false);
+	const [accessToken, setAccessToken] = useLocalStorage("access-token", "");
+
 	const handleChangeInput = (e: React.ChangeEvent<HTMLInputElement>) => {
 		setInputs((prev) => ({ ...prev, [e.target.name]: e.target.value }));
 	};
 
 	const handleRegister = async (e: React.FormEvent<HTMLFormElement>) => {
+		setLoading(true);
 		e.preventDefault();
 		if (!inputs.email || !inputs.password || !inputs.displayName) return alert("Please fill all fields");
 		try {
 			toast.loading("Creating your account", { position: "top-center", toastId: "loadingToast" });
-			const newUser = await createUserWithEmailAndPassword(inputs.email, inputs.password);
-			if (!newUser) return;
-			const userData = {
-				uid: newUser.user.uid,
-				email: newUser.user.email,
-				displayName: inputs.displayName,
-				createdAt: Date.now(),
-				updatedAt: Date.now(),
-				likedProblems: [],
-				dislikedProblems: [],
-				solvedProblems: [],
-				starredProblems: [],
-			};
-			await setDoc(doc(firestore, "users", newUser.user.uid), userData);
+			const response = await authApi.register({name: inputs.displayName, email: inputs.email, password: inputs.password});
+			if (!response.success) {
+				setLoading(false);
+				toast.error(response.message, { position: "top-center", autoClose: 3000, theme: "dark" });
+				return;
+			}
+			setAccessToken("Bearer " + response.token);
+			setLoading(false);
 			router.push("/");
-		} catch (error: any) {
-			toast.error(error.message, { position: "top-center" });
+		} catch (err: any) {
+			setLoading(false);
+			toast.error(err.message, { position: "top-center" });
 		} finally {
+			setLoading(false);
 			toast.dismiss("loadingToast");
 		}
 	};
 
 	useEffect(() => {
-		if (error) alert(error.message);
+		if (error.message) alert(error.message);
 	}, [error]);
 
 	return (

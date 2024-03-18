@@ -6,13 +6,11 @@ import { vscodeDark } from "@uiw/codemirror-theme-vscode";
 import { javascript } from "@codemirror/lang-javascript";
 import EditorFooter from "./EditorFooter";
 import { Problem } from "@/utils/types/problem";
-import { useAuthState } from "react-firebase-hooks/auth";
-import { auth, firestore } from "@/firebase/firebase";
 import { toast } from "react-toastify";
 import { problems } from "@/utils/problems";
 import { useRouter } from "next/router";
-import { arrayUnion, doc, updateDoc } from "firebase/firestore";
 import useLocalStorage from "@/hooks/useLocalStorage";
+import { authApi } from "@/services";
 
 type PlaygroundProps = {
 	problem: Problem;
@@ -38,7 +36,7 @@ const Playground: React.FC<PlaygroundProps> = ({ problem, setSuccess, setSolved 
 		dropdownIsOpen: false,
 	});
 
-	const [user] = useAuthState(auth);
+	const [user] = useLocalStorage("user", "");
 	const {
 		query: { pid },
 	} = useRouter();
@@ -70,15 +68,14 @@ const Playground: React.FC<PlaygroundProps> = ({ problem, setSuccess, setSolved 
 						setSuccess(false);
 					}, 4000);
 
-					const userRef = doc(firestore, "users", user.uid);
-					await updateDoc(userRef, {
-						solvedProblems: arrayUnion(pid),
+					await authApi.updateUser(user.id, {
+						...user,
+						solvedProblems: user.solvedProblems.push(pid),
 					});
 					setSolved(true);
 				}
 			}
 		} catch (error: any) {
-			console.log(error.message);
 			if (
 				error.message.startsWith("AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:")
 			) {

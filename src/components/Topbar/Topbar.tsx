@@ -1,7 +1,5 @@
-import { auth } from "@/firebase/firebase";
 import Link from "next/link";
 import React from "react";
-import { useAuthState } from "react-firebase-hooks/auth";
 import Logout from "../Buttons/Logout";
 import { useSetRecoilState } from "recoil";
 import { authModalState } from "@/atoms/authModalAtom";
@@ -12,13 +10,14 @@ import Timer from "../Timer/Timer";
 import { useRouter } from "next/router";
 import { problems } from "@/utils/problems";
 import { Problem } from "@/utils/types/problem";
+import useLocalStorage from "@/hooks/useLocalStorage";
 
 type TopbarProps = {
 	problemPage?: boolean;
 };
 
 const Topbar: React.FC<TopbarProps> = ({ problemPage }) => {
-	const [user] = useAuthState(auth);
+	const [user] = useLocalStorage("user", "");
 	const setAuthModalState = useSetRecoilState(authModalState);
 	const router = useRouter();
 
@@ -45,7 +44,7 @@ const Topbar: React.FC<TopbarProps> = ({ problemPage }) => {
 		<nav className='relative flex h-[50px] w-full shrink-0 items-center px-5 bg-dark-layer-1 text-dark-gray-7'>
 			<div className={`flex w-full items-center justify-between ${!problemPage ? "max-w-[1200px] mx-auto" : ""}`}>
 				<Link href='/' className='h-[22px] flex-1'>
-					<Image src='/logo-full.png' alt='Logo' height={100} width={100} />
+					<Image src='/logo-full.png' alt='Logo' height={50} width={50} />
 				</Link>
 
 				{problemPage && (
@@ -77,7 +76,7 @@ const Topbar: React.FC<TopbarProps> = ({ problemPage }) => {
 				<div className='flex items-center space-x-4 flex-1 justify-end'>
 					<div>
 						<a
-							href='https://www.buymeacoffee.com/burakorkmezz'
+							href='https://www.imt-soft.com'
 							target='_blank'
 							rel='noreferrer'
 							className='bg-dark-fill-3 py-1.5 px-3 cursor-pointer rounded text-brand-orange hover:bg-dark-fill-2'
